@@ -5,6 +5,7 @@ vorpal
   .command('record', 'Installs service workers and records API server responses')
   //.option()
   .action(function(args, callback) {
+    //navigator.serviceWorker.register('/sw.js');
     this.log("Server recording");
     callback();
   });

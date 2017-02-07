@@ -1,0 +1,8 @@
+{
+  "name": "prol.js",
+  "version": "0.0.1",
+  "description": "An automated server cacher and server using Service Workers",
+  "dependencies": {
+    "sw-toolbox": "^3.4.0"
+  }
+}
