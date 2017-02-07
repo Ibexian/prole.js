@@ -1,0 +1,8 @@
+{
+  "name": "prol.js",
+  "version": "0.0.1",
+  "description": "An automated server cacher and server using Service Workers",
+  "dependencies": {
+    "vorpal": "^1.11.4"
+  }
+}
