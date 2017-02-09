@@ -1,13 +1,22 @@
 const vorpal = require('vorpal')();
 const fs = require('fs');
 
+
 vorpal
   .command('record', 'Installs service workers and records API server responses')
   //.option()
   .action(function(args, callback) {
     //navigator.serviceWorker.register('/sw.js');
-    this.log("Server recording");
-    callback();
+    return this.prompt({ //https://www.npmjs.com/package/inquirer
+      type: 'input',
+      name: 'appPage',
+      default: 'app.js',
+      message: 'What\'s the name of the main js file? ',
+    }, function(result){
+      this.log("Binding to " + result.appPage);
+      this.log("Server recording");
+      callback();
+    });
   });
 
 vorpal
