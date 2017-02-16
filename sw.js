@@ -4,15 +4,37 @@
   // Load the sw-toolbox library.
   importScripts('/bower_components/sw-toolbox/sw-toolbox.js');
 
-  //Set timer for writes
-
   // Ensure that our service worker takes control of the page as soon as possible.
   global.addEventListener('install', event => event.waitUntil(global.skipWaiting()));
   global.addEventListener('activate', event => event.waitUntil(global.clients.claim()));
+
+  // Open DB
+  var openDb = function() {
+    return new Promise(function(resolve, reject){
+      var requestProl = indexedDB.open('prolDB', 11);
+      var db;
+
+      requestProl.onerror = function(event){
+        reject(event);
+      };
+      requestProl.onupgradeneeded = function(event){
+        db = event.target.result;
+        // Create an objectStore for this database
+        var objectStore = db.createObjectStore("caches");
+
+        objectStore.transaction.oncomplete = function(event) {
+          console.log("resolve");
+          resolve(db);
+        };
+      };
+    });
+  };
+  var prolDB = openDb();
   var recordedResponses = {};
 
   var apiHandler = function(req) {
     var modUrl = req.url.replace(/(currentTime|now_time)=\d*&?/g, '');
+    var altResp;
     var modReq = new Request(modUrl, {
         method: req.method,
         headers: req.headers,
@@ -20,21 +42,30 @@
         credentials: req.credentials,
         redirect: 'manual'   // let browser handle redirects
     });
-
-    toolbox.cache(modReq, {cache: {
-      name: "recordedResponses"
-    }});
     return fetch(modReq).then(function(response) {
+      var addToDB = function(data){
+        prolDB.then(function(db) {
+          var tx = db.transaction("caches", "readwrite").objectStore("caches");
+          var put = tx.put(data, data.url);
+          put.onerror = function(event) {
+            console.log(event);
+          };
+          put.onsuccess = function(event) {
+            console.log("success");
+          };
+        });
+      };
       if (response.headers.get('Content-Type') === 'application/json') {
         response.clone().json().then(function(altResp){
-          recordedResponses[modUrl] = altResp;
+          var putData = {'url': modUrl, 'response': altResp};
+          addToDB(putData);
         });
       } else {
         response.clone().text().then(function(altResp){
-          recordedResponses[modUrl] = altResp;
+          var putData = {'url': modUrl, 'response': altResp};
+          addToDB(putData);
         });
       }
-      console.log(JSON.stringify(recordedResponses));
       return response;
     });
   };
