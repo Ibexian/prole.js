@@ -3,7 +3,7 @@
   var cacheFileName = 'prol.json';
 
   // Load the sw-toolbox library.
-  importScripts('/bower_components/sw-toolbox/sw-toolbox.js');
+  importScripts('./swDeps/sw-toolbox/sw-toolbox.js');
 
   // Ensure that our service worker takes control of the page as soon as possible.
   global.addEventListener('install', event => event.waitUntil(global.skipWaiting()));
