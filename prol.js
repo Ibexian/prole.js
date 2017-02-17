@@ -2,6 +2,7 @@ const vorpal = require('vorpal')();
 const fs = require('fs');
 const webdriver = require('selenium-webdriver');
 const ncp = require('ncp').ncp;
+const cmd = require('node-cmd');
 
 ncp.limit = 16;
 
@@ -24,7 +25,7 @@ vorpal
     //Append to main file (config, ask, or default)
       //navigator.serviceWorker.register('/sw.js');
     //run server
-      // default is 'npm run dev' in target directory
+      // default is cmd.run('npm run dev') in target directory
     //open window
       // var browser = new webdriver.Builder().usingServer().withCapabilities({'browserName': 'chrome' }).build();
     return this.prompt({ //https://www.npmjs.com/package/inquirer
@@ -43,7 +44,7 @@ vorpal
   .command('write <outputFile>', 'Stops any ongoing caching and saves the results')
   .action(function(args, callback) {
     //Access indexedDb in through selenium
-    //save contents to file with fs
+    //save contents to file => fs.writefile(outputFile, content);
     //close window/instance
       //browser.quit();
     var out = args.outputFile + ".json";
@@ -61,7 +62,7 @@ vorpal
       // fs.readfile => fs.writefile => sw.js
       // copyDir(/swDeps, target/swDeps);
     //run server
-      //default server command
+      // default is cmd.run('npm run dev') in target directory
     this.log("Serving cache from " + args.cacheFile);
     callback();
   });
