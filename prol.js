@@ -20,7 +20,8 @@ vorpal
   //.option()
   .action(function(args, callback) {
     //Move files and folders to target directory (config, ask, or default)
-      //fs.readfile => fs.writefile => sw.js
+      //fs.readfile => fs.writefile => main app file (likely app.js)
+      //copyDir(sw.js, target/sw.js) ?
       //copyDir(/swDeps, target/swDeps);
     //Append to main file (config, ask, or default)
       //navigator.serviceWorker.register('/sw.js');
@@ -47,6 +48,7 @@ vorpal
     //save contents to file => fs.writefile(outputFile, content);
     //close window/instance
       //browser.quit();
+    //Remove swDeps and sw.js - unappend main file
     var out = args.outputFile + ".json";
     fs.writeFile(out, 'Hello Node.js', (err) => {
       if (err) throw err;
@@ -59,7 +61,9 @@ vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results')
   .action(function(args, callback){
     //move files
-      // fs.readfile => fs.writefile => sw.js
+      // fs.readfile => fs.writefile => app.js
+      // copyDir(swCache.js, target/swCache.js)
+      // copy cacheFile as well
       // copyDir(/swDeps, target/swDeps);
     //run server
       // default is cmd.run('npm run dev') in target directory

@@ -11,7 +11,7 @@
   // Open DB
   var openDb = function() {
     return new Promise(function(resolve, reject){
-      var requestProl = indexedDB.open('prolDB', 11);
+      var requestProl = indexedDB.open('prolDB', 12);
       var db;
 
       requestProl.onerror = function(event){
@@ -43,6 +43,7 @@
         redirect: 'manual'   // let browser handle redirects
     });
     return fetch(modReq).then(function(response) {
+      var contentType = response.headers.get('Content-Type');
       var addToDB = function(data){
         prolDB.then(function(db) {
           var tx = db.transaction("caches", "readwrite").objectStore("caches");
@@ -50,19 +51,16 @@
           put.onerror = function(event) {
             console.log(event);
           };
-          put.onsuccess = function(event) {
-            console.log("success");
-          };
         });
       };
-      if (response.headers.get('Content-Type') === 'application/json') {
+      if (contentType === 'application/json') {
         response.clone().json().then(function(altResp){
-          var putData = {'url': modUrl, 'response': altResp};
+          var putData = {'url': modUrl, 'response': altResp, 'contentType': contentType};
           addToDB(putData);
         });
       } else {
         response.clone().text().then(function(altResp){
-          var putData = {'url': modUrl, 'response': altResp};
+          var putData = {'url': modUrl, 'response': altResp, 'contentType': contentType};
           addToDB(putData);
         });
       }
