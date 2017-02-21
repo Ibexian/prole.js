@@ -2,7 +2,7 @@
   'use strict';
 
   // Load the sw-toolbox library.
-  importScripts('./swDeps/sw-toolbox/sw-toolbox.js');
+  importScripts('/swDeps/sw-toolbox/sw-toolbox.js');
 
   // Ensure that our service worker takes control of the page as soon as possible.
   global.addEventListener('install', event => event.waitUntil(global.skipWaiting()));
@@ -11,7 +11,7 @@
   // Open DB
   var openDb = function() {
     return new Promise(function(resolve, reject){
-      var requestProl = indexedDB.open('prolDB', 12);
+      var requestProl = indexedDB.open('prolDB', 13);
       var db;
 
       requestProl.onerror = function(event){
@@ -55,7 +55,7 @@
       };
       if (contentType === 'application/json') {
         response.clone().json().then(function(altResp){
-          var putData = {'url': modUrl, 'response': altResp, 'contentType': contentType};
+          var putData = {'url': modUrl, 'response': JSON.stringify(altResp), 'contentType': contentType};
           addToDB(putData);
         });
       } else {
