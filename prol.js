@@ -21,6 +21,7 @@ vorpal
   .action(function(args, callback) {
     //Move files and folders to target directory (config, ask, or default)
       //fs.readfile => fs.writefile => main app file (likely app.js)
+        //OR use selenium-webdriver to execute JS and bind serviceWorker that way
       //copyDir(sw.js, target/sw.js) ?
       //copyDir(/swDeps, target/swDeps);
     //Append to main file (config, ask, or default)
@@ -45,6 +46,7 @@ vorpal
   .command('write <outputFile>', 'Stops any ongoing caching and saves the results')
   .action(function(args, callback) {
     //Access indexedDb in through selenium
+    //Terminate Service worker through selenium "executescript"
     //save contents to file => fs.writefile(outputFile, content);
     //close window/instance
       //browser.quit();
