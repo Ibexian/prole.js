@@ -2,7 +2,10 @@ const vorpal = require('vorpal')();
 const fs = require('fs');
 const webdriver = require('selenium-webdriver');
 const ncp = require('ncp').ncp;
-const cmd = require('node-cmd');
+var browser;
+
+//Current Defaults
+const targetDir = '/Users/wkamovitch/Sites/compass/src/js';
 
 ncp.limit = 16;
 
@@ -11,7 +14,7 @@ var copyDir = function(source, destination) {
    if (err) {
      return console.error(err);
    }
-   console.log('done!');
+   console.log(source + " moved");
   });
 };
 
@@ -19,31 +22,35 @@ vorpal
   .command('record', 'Installs service workers and records API server responses')
   //.option()
   .action(function(args, callback) {
-    //Move files and folders to target directory (config, ask, or default)
-      //fs.readfile => fs.writefile => main app file (likely app.js)
-        //OR use selenium-webdriver to execute JS and bind serviceWorker that way
-      //copyDir(sw.js, target/sw.js) ?
-      //copyDir(/swDeps, target/swDeps);
-    //Append to main file (config, ask, or default)
-      //navigator.serviceWorker.register('/sw.js');
-    //run server
-      // default is cmd.run('npm run dev') in target directory
-    //open window
-      // var browser = new webdriver.Builder().usingServer().withCapabilities({'browserName': 'chrome' }).build();
+    var self = this;
+    //binding serviceWorker
+      // selenium-webdriver to execute JS and bind serviceWorker that way
+        // navigator.serviceWorker.register('/sw.js');
     return this.prompt({ //https://www.npmjs.com/package/inquirer
       type: 'input',
-      name: 'appPage',
-      default: 'app.js',
-      message: 'What\'s the name of the main js file? ',
+      name: 'targetURL',
+      default: 'http://localhost:9000/',
+      message: 'What\'s the target url to record? ',
     }, function(result){
-      this.log("Binding to " + result.appPage);
-      this.log("Server recording");
-      callback();
+      self.log("Binding to " + targetDir);
+      //Move files and folders to target directory (config, ask, or default)
+      copyDir(__dirname + '/workers/sw.js', targetDir + '/sw.js');
+      copyDir(__dirname + '/swDeps', targetDir  + '/swDeps');
+      //open window
+      require('chromedriver');
+      browser = new webdriver.Builder().usingServer().withCapabilities({'browserName': 'chrome' }).build();
+      browser.get(result.targetURL);
+      self.log("Server recording");
+      // callback();
     });
+  })
+  .cancel(function () { //This is not yet working
+    this.log('Closing chromedriver and removing service workers');
+    browser.quit();
   });
 
 vorpal
-  .command('write <outputFile>', 'Stops any ongoing caching and saves the results')
+  .command('write <outputFile>', 'Stops any ongoing caching and saves the results') //This might need to happen inside record
   .action(function(args, callback) {
     //Access indexedDb in through selenium
     //Terminate Service worker through selenium "executescript"
@@ -59,6 +66,21 @@ vorpal
     });
   });
 
+  vorpal
+    .command('clean', 'Stops any ongoing caching without writing to file') //This might need to happen inside record
+    .action(function(args, callback) {
+      //Terminate Service worker through selenium "executescript"
+      //close window/instance
+        //browser.quit();
+      //Remove swDeps and sw.js or swCache.js - unappend main file
+      var out = args.outputFile + ".json";
+      fs.writeFile(out, 'Hello Node.js', (err) => {
+        if (err) throw err;
+        console.log('It\'s saved!');
+        callback();
+      });
+    });
+
 vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results')
   .action(function(args, callback){
@@ -67,8 +89,6 @@ vorpal
       // copyDir(swCache.js, target/swCache.js)
       // copy cacheFile as well
       // copyDir(/swDeps, target/swDeps);
-    //run server
-      // default is cmd.run('npm run dev') in target directory
     this.log("Serving cache from " + args.cacheFile);
     callback();
   });
