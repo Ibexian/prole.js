@@ -1,6 +1,6 @@
 const vorpal = require('vorpal')();
 const fs = require('fs');
-const webdriver = require('selenium-webdriver');
+const {Builder, By, until} = require('selenium-webdriver');
 const ncp = require('ncp').ncp;
 const shell = require('shelljs');
 const chalk = require('chalk');
@@ -30,16 +30,22 @@ var copyDir = function(source, destination) {
 var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback) {
   Promise.all(promiseArr).then(() => {
     vorpal.log(chalk.blue("Files Moved"));
-    //open window - probably need to close any existing web driver instances
+    if (browser) { //clear out any existing Selenium instances
+      browser.quit();
+      browser = '';
+    }
+    //open window
     require('chromedriver');
-    browser = new webdriver.Builder()
+    browser = new Builder()
       .usingServer()
       .withCapabilities({'browserName': 'chrome' })
       .build();
     browser.get(address)
       .then(() => {
         vorpal.log(chalk.green(message));
+        browser.executeScript('navigator.serviceWorker.register("/js/sw.js")');
         vorpal.show();
+        callback();
       });
   }, reason => { //if the promises fail don't try to open the browser
     vorpal.log(chalk.red(reason));
@@ -89,19 +95,22 @@ vorpal
 
   vorpal
     .command('clean', 'Stops any ongoing caching without writing to file')
+    .alias('clear')
     .action(function(args, callback) {
       //TODO Terminate Service worker through selenium "executescript"
       //close window/instance
       try {
         browser.quit();
+        browser = ''; //Clear out the browser variable to allow for new instances
       } catch (e) {
         this.log('No Selenium instance to close');
       }
       //Remove swDeps and sw.js or swCache.js
       shell.rm('-rf', targetDir + '/swDeps');
-      shell.rm(targetDir + '/sw.js', targetDir + '/swCache.js');
+      shell.rm(targetDir + '/sw.js', targetDir + '/cacheSw.js');
       this.log(chalk.green('Selenium closed and service workers removed'));
       vorpal.show();
+      callback();
     });
 
 vorpal
@@ -117,7 +126,7 @@ vorpal
       self.log("Binding to " + targetDir);
       vorpal.hide();
       //Move files and folders to target directory (config, ask, or default)
-      var fileArr = [copyDir('/workers/swCache.js', '/swCache.js'), copyDir('/' + args.cacheFile , '/' + args.cacheFile), copyDir('/swDeps', '/swDeps')];
+      var fileArr = [copyDir('/workers/cacheSw.js', '/cacheSw.js'), copyDir('/' + args.cacheFile , '/' + args.cacheFile), copyDir('/swDeps', '/swDeps')];
       moveFilesAndOpenBrowser(fileArr, result.targetURL, "Serving cache from " + args.cacheFile, callback);
     });
   });

@@ -2,7 +2,7 @@
   'use strict';
 
   // Load the sw-toolbox library.
-  importScripts('/swDeps/sw-toolbox/sw-toolbox.js');
+  importScripts('/js/swDeps/sw-toolbox/sw-toolbox.js');
 
   // Ensure that our service worker takes control of the page as soon as possible.
   global.addEventListener('install', event => event.waitUntil(global.skipWaiting()));
