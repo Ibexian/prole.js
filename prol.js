@@ -12,6 +12,13 @@ const defaultUrl = 'http://localhost:9000/';
 
 ncp.limit = 16;
 
+/*
+TODO
+  Generalize swDeps in service worker code
+  Get Service Workers working again
+  Get data from indexedDB
+*/
+
 var copyDir = function(source, destination) {
   return new Promise(function(resolve, reject){
     fs.stat(__dirname + source, function(err, stat) {
@@ -27,7 +34,7 @@ var copyDir = function(source, destination) {
   });
 };
 
-var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback) {
+var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, sw) {
   Promise.all(promiseArr).then(() => {
     vorpal.log(chalk.blue("Files Moved"));
     if (browser) { //clear out any existing Selenium instances
@@ -43,7 +50,8 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback) {
     browser.get(address)
       .then(() => {
         vorpal.log(chalk.green(message));
-        browser.executeScript('navigator.serviceWorker.register("/js/sw.js")');
+        browser.executeScript('navigator.serviceWorker.register("js/'+ sw +'")');
+        browser.executeScript('location.reload()');
         vorpal.show();
         callback();
       });
@@ -61,7 +69,6 @@ vorpal
     var self = this;
     //TODO binding serviceWorker
       // selenium-webdriver to execute JS and bind serviceWorker that way
-        // Unbind any already registered service workers
         // then register the one we want navigator.serviceWorker.register('/sw.js');
     return this.prompt({ //https://www.npmjs.com/package/inquirer
       type: 'input',
@@ -73,7 +80,7 @@ vorpal
       vorpal.hide();
       //Move files and folders to target directory (config, ask, or default)
       var fileArr = [copyDir('/workers/sw.js','/sw.js'), copyDir('/swDeps', '/swDeps')];
-      moveFilesAndOpenBrowser(fileArr, result.targetURL, "Server recording", callback);
+      moveFilesAndOpenBrowser(fileArr, result.targetURL, "Server recording", callback, 'sw.js');
     });
   });
 
@@ -81,6 +88,7 @@ vorpal
   .command('write <outputName>', 'Stops any ongoing caching and saves the results')
   .action(function(args, callback) {
     //TODO Access indexedDb in through selenium
+    //http://stackoverflow.com/questions/40024528/delete-all-indexeddb-databases-for-website
     //save contents to file => fs.writefile(outputFile, content);
     var out = args.outputName + ".json";
     fs.writeFile(out, 'Hello Node.js', (err) => {
@@ -97,7 +105,6 @@ vorpal
     .command('clean', 'Stops any ongoing caching without writing to file')
     .alias('clear')
     .action(function(args, callback) {
-      //TODO Terminate Service worker through selenium "executescript"
       //close window/instance
       try {
         browser.quit();
@@ -126,8 +133,14 @@ vorpal
       self.log("Binding to " + targetDir);
       vorpal.hide();
       //Move files and folders to target directory (config, ask, or default)
-      var fileArr = [copyDir('/workers/cacheSw.js', '/cacheSw.js'), copyDir('/' + args.cacheFile , '/' + args.cacheFile), copyDir('/swDeps', '/swDeps')];
-      moveFilesAndOpenBrowser(fileArr, result.targetURL, "Serving cache from " + args.cacheFile, callback);
+      var respMessage = "Serving cache from " + args.cacheFile;
+      var fileArr = [
+        copyDir('/workers/cacheSw.js', '/cacheSw.js'),
+        copyDir('/' + args.cacheFile , '/' + args.cacheFile),
+        copyDir('/swDeps', '/swDeps')
+      ];
+
+      moveFilesAndOpenBrowser(fileArr, result.targetURL, respMessage, callback, 'cacheSw.js');
     });
   });
 
