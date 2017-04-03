@@ -7,7 +7,7 @@ const chalk = require('chalk');
 var browser;
 
 //Current Defaults
-const targetDir = '/Users/wkamovitch/Sites/compass/src/js';
+const targetDir = '/Users/wkamovitch/Sites/compass/src';
 const defaultUrl = 'http://localhost:9000/';
 
 ncp.limit = 16;
@@ -15,8 +15,6 @@ ncp.limit = 16;
 /*
 TODO
   Generalize swDeps in service worker code
-  Get Service Workers working again
-  Get data from indexedDB
 */
 
 var copyDir = function(source, destination) {
@@ -50,7 +48,7 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
     browser.get(address)
       .then(() => {
         vorpal.log(chalk.green(message));
-        browser.executeScript('navigator.serviceWorker.register("js/'+ sw +'")');
+        browser.executeScript('navigator.serviceWorker.register("'+ sw +'")');
         browser.executeScript('location.reload()');
         vorpal.show();
         callback();
@@ -87,17 +85,32 @@ vorpal
 vorpal
   .command('write <outputName>', 'Stops any ongoing caching and saves the results')
   .action(function(args, callback) {
-    //TODO Access indexedDb in through selenium
-    //http://stackoverflow.com/questions/40024528/delete-all-indexeddb-databases-for-website
-    //save contents to file => fs.writefile(outputFile, content);
     var out = args.outputName + ".json";
-    fs.writeFile(out, 'Hello Node.js', (err) => {
-      if (err) throw err;
-      vorpal.log('It\'s saved!');
-      callback();
+    //JS to pass to the open browser through Selenium
+    var dbPromise = `var openDb = function() {
+      return new Promise(function(resolve, reject){
+        var requestProl = indexedDB.open('prolDB');
+        requestProl.onsuccess = function(event){
+          var tx = event.target.result.transaction("caches", "readwrite").objectStore("caches").getAll();
+          tx.onsuccess = function(event) { resolve(event.target.result); };
+        };
+      });
+    };
+    openDb().then(contents => dbContents = contents);`;
+    var writeToFile = function(fileName, content){
+      fs.writeFile(fileName, content, (err) => {
+        if (err) throw err;
+        vorpal.log('It\'s saved!');
+        callback();
+      });
+    };
+    browser.executeScript(dbPromise).then(function(){ //Set up the promise in the browser
+      browser.executeScript('return dbContents').then(function(content){ //get the returned value
+        var contentObj = {};
+        content.map(call => contentObj[call.url] = call);
+        writeToFile(out, JSON.stringify(contentObj)); //save db contents to file
+      });
     });
-
-    //Wrap the above in a promise (https://github.com/dthree/vorpal/wiki/API-%7C-vorpal#vorpalexeccommand-callback)
     return vorpal.exec('clean');
   });
 
@@ -121,7 +134,7 @@ vorpal
     });
 
 vorpal
-  .command('serve <cacheFile>', 'Installs service workers and serves previously cached results')
+  .command('serve <cacheFile>', 'Installs service workers and serves previously cached results from json')
   .action(function(args, callback){
     var self = this;
     return this.prompt({ //https://www.npmjs.com/package/inquirer
@@ -136,7 +149,7 @@ vorpal
       var respMessage = "Serving cache from " + args.cacheFile;
       var fileArr = [
         copyDir('/workers/cacheSw.js', '/cacheSw.js'),
-        copyDir('/' + args.cacheFile , '/' + args.cacheFile),
+        copyDir('/' + args.cacheFile + '.json' , '/prol.json'),
         copyDir('/swDeps', '/swDeps')
       ];
 
