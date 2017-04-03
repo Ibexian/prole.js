@@ -19,3 +19,13 @@ Prol.js is an automated server cacher and stub using Service Workers
 `clean` - Stops any ongoing caching without writing to file
 
 `serve <cacheFile>` - Installs service worker and serves previously cached results from `<cacheFile>.json`
+
+### Prol Options
+Both the `record` and `serve` actions allow for overwriting of the default address (https://localhost:9000/) through use of the `-a` or `--address` option.
+
+e.g. `record -a https://localhost:8080/`
+
+### Running Prol Commands Directly
+Any of the above prol commands can be run from outside the prol interface by appending them to the `node prol.js` call. This allows for `serve` to be part of an automated testing suite.
+
+e.g. `node prol.js serve demo`

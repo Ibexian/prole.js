@@ -65,21 +65,18 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
 
 vorpal
   .command('record', 'Installs service workers and records API server responses')
-  //.option()
+  .option('-a, --address <url>', 'Use a non-default url')
+  .types({
+    string: ['a', 'address']
+  })
   .action(function(args, callback) {
     var self = this;
-    return this.prompt({
-      type: 'input',
-      name: 'targetURL',
-      default: defaultUrl,
-      message: 'What\'s the target url to record? ',
-    }, function(result){
-      self.log("Binding to " + targetDir);
-      vorpal.hide();
-      //Move files and folders to target directory (config, ask, or default)
-      var fileArr = [copyDir('/workers/sw.js','/sw.js'), copyDir('/swDeps', '/swDeps')];
-      moveFilesAndOpenBrowser(fileArr, result.targetURL, "Server recording", callback, 'sw.js');
-    });
+    var targetURL = args.options.address || defaultUrl;
+    self.log("Binding to " + targetDir);
+    vorpal.hide();
+    //Move files and folders to target directory (config, ask, or default)
+    var fileArr = [copyDir('/workers/sw.js','/sw.js'), copyDir('/swDeps', '/swDeps')];
+    moveFilesAndOpenBrowser(fileArr, targetURL, "Server recording", callback, 'sw.js');
   });
 
 vorpal
@@ -135,26 +132,26 @@ vorpal
 
 vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results from json')
+  .option('-a, --address <url>', 'Use a non-default url')
+  .types({
+    string: ['a', 'address']
+  })
   .action(function(args, callback){
     var self = this;
-    return this.prompt({ //https://www.npmjs.com/package/inquirer
-      type: 'input',
-      name: 'targetURL',
-      default: defaultUrl,
-      message: 'What\'s the target url for serving the cache? ',
-    }, function(result){
-      self.log("Binding to " + targetDir);
-      vorpal.hide();
-      //Move files and folders to target directory (config, ask, or default)
-      var respMessage = "Serving cache from " + args.cacheFile;
-      var fileArr = [
-        copyDir('/workers/cacheSw.js', '/cacheSw.js'),
-        copyDir('/' + args.cacheFile + '.json' , '/prol.json'),
-        copyDir('/swDeps', '/swDeps')
-      ];
+    var targetURL = args.options.address || defaultUrl;
 
-      moveFilesAndOpenBrowser(fileArr, result.targetURL, respMessage, callback, 'cacheSw.js');
-    });
+    self.log("Binding to " + targetDir);
+    vorpal.hide();
+    //Move files and folders to target directory (config, ask, or default)
+    var respMessage = "Serving cache from " + args.cacheFile;
+    var fileArr = [
+      copyDir('/workers/cacheSw.js', '/cacheSw.js'),
+      copyDir('/' + args.cacheFile + '.json' , '/prol.json'),
+      copyDir('/swDeps', '/swDeps')
+    ];
+
+    moveFilesAndOpenBrowser(fileArr, targetURL, respMessage, callback, 'cacheSw.js');
+
   });
 
 vorpal
