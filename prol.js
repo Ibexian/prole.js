@@ -14,17 +14,15 @@ ncp.limit = 16;
 
 /*
 TODO
-  Generalize swDeps in service worker code
-  Change location of cache file?
   Make sure POST calls also cache
-  Option to bypass prompt?
 */
 
-var copyDir = function(source, destination) {
+var copyDir = function(source, destination, nonlocal) {
   return new Promise(function(resolve, reject){
-    fs.stat(__dirname + source, function(err, stat) {
+    var src = nonlocal ? source : __dirname + source;
+    fs.stat(src, function(err, stat) {
       if (!err) {
-        ncp(__dirname + source, targetDir + destination, function (err) {
+        ncp(src, targetDir + destination, function (err) {
          if (err) { reject(err); }
          resolve();
         });
@@ -51,8 +49,9 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
     browser.get(address)
       .then(() => {
         vorpal.log(chalk.green(message));
-        browser.executeScript('navigator.serviceWorker.register("'+ sw +'")');
-        browser.executeScript('location.reload()');
+        browser.executeScript('navigator.serviceWorker.register("'+ sw +'")').then(function(){
+          browser.executeScript('location.reload()');
+        });
         vorpal.show();
         callback();
       });
@@ -133,20 +132,21 @@ vorpal
 vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results from json')
   .option('-a, --address <url>', 'Use a non-default url')
+  .option('-n, --nonlocal', 'cacheFile address is not local')
   .types({
     string: ['a', 'address']
   })
   .action(function(args, callback){
     var self = this;
     var targetURL = args.options.address || defaultUrl;
-
+    var nonlocal = args.options.nonlocal;
     self.log("Binding to " + targetDir);
     vorpal.hide();
     //Move files and folders to target directory (config, ask, or default)
     var respMessage = "Serving cache from " + args.cacheFile;
     var fileArr = [
       copyDir('/workers/cacheSw.js', '/cacheSw.js'),
-      copyDir('/' + args.cacheFile + '.json' , '/prol.json'),
+      copyDir('/' + args.cacheFile + '.json' , '/prol.json', nonlocal),
       copyDir('/swDeps', '/swDeps')
     ];
 
