@@ -1,6 +1,6 @@
 const vorpal = require('vorpal')();
 const fs = require('fs');
-const {Builder, By, until} = require('selenium-webdriver');
+const {Builder} = require('selenium-webdriver');
 const ncp = require('ncp').ncp;
 const shell = require('shelljs');
 const chalk = require('chalk');
@@ -15,6 +15,9 @@ ncp.limit = 16;
 /*
 TODO
   Generalize swDeps in service worker code
+  Change location of cache file?
+  Make sure POST calls also cache
+  Option to bypass prompt?
 */
 
 var copyDir = function(source, destination) {
@@ -65,10 +68,7 @@ vorpal
   //.option()
   .action(function(args, callback) {
     var self = this;
-    //TODO binding serviceWorker
-      // selenium-webdriver to execute JS and bind serviceWorker that way
-        // then register the one we want navigator.serviceWorker.register('/sw.js');
-    return this.prompt({ //https://www.npmjs.com/package/inquirer
+    return this.prompt({
       type: 'input',
       name: 'targetURL',
       default: defaultUrl,
@@ -159,4 +159,5 @@ vorpal
 
 vorpal
   .delimiter('prol⚒')
-  .show();
+  .show()
+  .parse(process.argv);
