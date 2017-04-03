@@ -18,4 +18,4 @@ Prol.js is an automated server cacher and stub using Service Workers
 
 `clean` - Stops any ongoing caching without writing to file
 
-`serve <cacheFile>` - Installs service worker and serves previously cached results from `<cacheFile>`
+`serve <cacheFile>` - Installs service worker and serves previously cached results from `<cacheFile>.json`
