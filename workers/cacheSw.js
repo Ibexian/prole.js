@@ -1,3 +1,4 @@
+var reg = /(dmp|api)/;
 (global => {
   'use strict';
 
@@ -12,27 +13,32 @@
   var cachedJson;
 
   var apiHandler = function(req) {
-    var modUrl = req.url.replace(/(currentTime|now_time)=\d*&?/g, '');
-    if (!cachedJson){
-      //TODO Figure out initial load weirdness
+    var modUrl = req.url.replace(/(currentTime|now_time)=\d*&?/g, ''); // remove anti-caching url modifiers
+    if (!cachedJson) {
       return fetch('prol.json').then(function(response) {
         response.json().then(function(jsonRep){  //return cached response from json
           cachedJson = jsonRep;
           var cachedResp = cachedJson[modUrl];
-          return new Response(cachedResp.response, {
-            headers: { "Content-Type" : cachedResp.contentType }
-          });
+          if (cachedResp) {
+            return new Response(cachedResp.response, {
+              headers: { "Content-Type" : cachedResp.contentType }
+            });
+          } else {
+            return fetch(req);
+          }
         });
       });
-    } else {
+    } else if (cachedJson[modUrl]) {
       //return cached response from json
       var cachedResp = cachedJson[modUrl];
       return new Response(cachedResp.response, {
         headers: { "Content-Type" : cachedResp.contentType }
       });
+    } else { //pass through any requests not in the cacheFile
+      return fetch(req);
     }
   };
   //catch all not just get
-  toolbox.router.get(/(dmp|api)/, apiHandler);
+  toolbox.router.any(reg, apiHandler);
 
 })(self);

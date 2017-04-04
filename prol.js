@@ -9,6 +9,7 @@ var browser;
 //Current Defaults
 const targetDir = '/Users/wkamovitch/Sites/compass/src';
 const defaultUrl = 'http://localhost:9000/';
+const defaultRegex = '(dmp|api)';
 
 ncp.limit = 16;
 
@@ -33,6 +34,24 @@ var copyDir = function(source, destination, nonlocal) {
   });
 };
 
+var writeToFile = function(fileName, content, cb){
+  fs.writeFile(fileName, content, (err) => {
+    if (err) throw err;
+    vorpal.log(fileName + ' saved!');
+    if(cb) {
+      cb();
+    }
+  });
+};
+
+var createRegFile = function(reg) {
+  //Move regext to file then bind to service workers
+  var fileName = 'swDeps/reg.js';
+  var content = `(function (global) {'use strict'; var reg = function(){}; reg.reg = /${reg}/; global.reg = reg;})(this);`;
+  writeToFile(fileName,content);
+};
+
+
 var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, sw) {
   Promise.all(promiseArr).then(() => {
     vorpal.log(chalk.blue("Files Moved"));
@@ -50,7 +69,8 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
       .then(() => {
         vorpal.log(chalk.green(message));
         browser.executeScript('navigator.serviceWorker.register("'+ sw +'")').then(function(){
-          browser.executeScript('location.reload()');
+          browser.sleep(1000);
+          //browser.executeScript('location.reload()');
         });
         vorpal.show();
         callback();
@@ -65,14 +85,18 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
 vorpal
   .command('record', 'Installs service workers and records API server responses')
   .option('-a, --address <url>', 'Use a non-default url')
+  .option('-r, --regex <regexString>', 'Use non-default regex to determine which requests get recorded')
   .types({
     string: ['a', 'address']
   })
   .action(function(args, callback) {
     var self = this;
     var targetURL = args.options.address || defaultUrl;
+    var regex = args.options.regex || defaultRegex;
     self.log("Binding to " + targetDir);
     vorpal.hide();
+    //Create regex file
+    createRegFile(regex);
     //Move files and folders to target directory (config, ask, or default)
     var fileArr = [copyDir('/workers/sw.js','/sw.js'), copyDir('/swDeps', '/swDeps')];
     moveFilesAndOpenBrowser(fileArr, targetURL, "Server recording", callback, 'sw.js');
@@ -93,18 +117,12 @@ vorpal
       });
     };
     openDb().then(contents => dbContents = contents);`;
-    var writeToFile = function(fileName, content){
-      fs.writeFile(fileName, content, (err) => {
-        if (err) throw err;
-        vorpal.log('It\'s saved!');
-        callback();
-      });
-    };
-    browser.executeScript(dbPromise).then(function(){ //Set up the promise in the browser
+    browser.executeScript(dbPromise).then(function() { //Set up the promise in the browser
+      browser.sleep(1000);
       browser.executeScript('return dbContents').then(function(content){ //get the returned value
         var contentObj = {};
         content.map(call => contentObj[call.url] = call);
-        writeToFile(out, JSON.stringify(contentObj)); //save db contents to file
+        writeToFile(out, JSON.stringify(contentObj), callback); //save db contents to file
       });
     });
     return vorpal.exec('clean');
@@ -123,7 +141,7 @@ vorpal
       }
       //Remove swDeps and sw.js or swCache.js
       shell.rm('-rf', targetDir + '/swDeps');
-      shell.rm(targetDir + '/sw.js', targetDir + '/cacheSw.js');
+      shell.rm(targetDir + '/sw.js', targetDir + '/cacheSw.js', targetDir + '/prol.json');
       this.log(chalk.green('Selenium closed and service workers removed'));
       vorpal.show();
       callback();
@@ -133,15 +151,17 @@ vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results from json')
   .option('-a, --address <url>', 'Use a non-default url')
   .option('-n, --nonlocal', 'cacheFile address is not local')
+  .option('-r, --regex <regexString>', 'Use non-default regex to determine which requests get recorded')
   .types({
     string: ['a', 'address']
   })
   .action(function(args, callback){
     var self = this;
-    var targetURL = args.options.address || defaultUrl;
-    var nonlocal = args.options.nonlocal;
+    var {nonlocal, address = defaultUrl, regex = defaultRegex} = args.options;
     self.log("Binding to " + targetDir);
     vorpal.hide();
+    //Create regex file
+    createRegFile(regex);
     //Move files and folders to target directory (config, ask, or default)
     var respMessage = "Serving cache from " + args.cacheFile;
     var fileArr = [
@@ -150,7 +170,7 @@ vorpal
       copyDir('/swDeps', '/swDeps')
     ];
 
-    moveFilesAndOpenBrowser(fileArr, targetURL, respMessage, callback, 'cacheSw.js');
+    moveFilesAndOpenBrowser(fileArr, address, respMessage, callback, 'cacheSw.js');
 
   });
 
