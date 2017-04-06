@@ -1,4 +1,3 @@
-var reg = /(dmp|api)/;
 (global => {
   'use strict';
 
@@ -39,6 +38,6 @@ var reg = /(dmp|api)/;
     }
   };
   //catch all not just get
-  toolbox.router.any(reg, apiHandler);
+  toolbox.router.get(reg.reg, apiHandler);
 
 })(self);

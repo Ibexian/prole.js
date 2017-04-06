@@ -15,7 +15,7 @@ ncp.limit = 16;
 
 /*
 TODO
-  Make sure POST calls also cache
+  Make sure POST calls also cache, and make sure is unique
 */
 
 var copyDir = function(source, destination, nonlocal) {
