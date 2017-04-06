@@ -11,13 +11,13 @@
   // Open DB
   var openDb = function() {
     return new Promise(function(resolve, reject){
-      var requestProl = indexedDB.open('prolDB', 13);
+      var requestProle = indexedDB.open('proleDB', 13);
       var db;
 
-      requestProl.onerror = function(event){
+      requestProle.onerror = function(event){
         reject(event);
       };
-      requestProl.onupgradeneeded = function(event){
+      requestProle.onupgradeneeded = function(event){
         db = event.target.result;
         // Create an objectStore for this database
         var objectStore = db.createObjectStore("caches");
@@ -29,7 +29,7 @@
       };
     });
   };
-  var prolDB = openDb();
+  var proleDB = openDb();
   var recordedResponses = {};
 
   var apiHandler = function(req) {
@@ -45,7 +45,7 @@
     return fetch(modReq).then(function(response) {
       var contentType = response.headers.get('Content-Type');
       var addToDB = function(data){
-        prolDB.then(function(db) {
+        proleDB.then(function(db) {
           var tx = db.transaction("caches", "readwrite").objectStore("caches");
           var put = tx.put(data, data.url);
           put.onerror = function(event) {

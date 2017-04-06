@@ -1,14 +1,14 @@
-Prol.js - power to the workers ⚒
+Prole.js - power to the workers ⚒
 ------
-Prol.js is an automated server cacher and stub using Service Workers
+Prole.js is an automated server cacher and stub using Service Workers
 
 ### Build Instructions
     nvm use
     npm install -g bower
     npm install && bower install
-    node prol.js
+    node prole.js
 
-### Prol Commands
+### Prole Commands
 #### record
 Installs service worker and records API server responses while you use the site
 
@@ -21,7 +21,7 @@ Stops any ongoing caching without writing to file
 #### serve <cacheFile>
 Installs service worker and serves previously cached results from `<cacheFile>.json`
 
-### Prol Options
+### Prole Options
 #### --address
 Both the `record` and `serve` actions allow for overwriting of the default address (http://localhost:9000/) through use of the `-a` or `--address` option.
 
@@ -35,7 +35,7 @@ The `serve` command also allows the user to stipulate direct links to cache file
 
   e.g. `serve /Users/{SomeUser}/demo`
 
-### Running Prol Commands Directly
-Any of the above prol commands can be run from outside the prol interface by appending them to the `node prol.js` call. This allows for `serve` to be part of an automated testing suite.
+### Running Prole Commands Directly
+Any of the above prole commands can be run from outside the prole interface by appending them to the `node prole.js` call. This allows for `serve` to be part of an automated testing suite.
 
-e.g. `node prol.js serve demo`
+e.g. `node prole.js serve demo`

@@ -15,7 +15,10 @@ ncp.limit = 16;
 
 /*
 TODO
-  Make sure POST calls also cache, and make sure is unique
+  Make sure POST calls also cache
+  Save POST request content as well (perhaps seperate json)
+  Eventually compare post requests for testing
+  Create strict mode (don't pass through)
 */
 
 var copyDir = function(source, destination, nonlocal) {
@@ -109,8 +112,8 @@ vorpal
     //JS to pass to the open browser through Selenium
     var dbPromise = `var openDb = function() {
       return new Promise(function(resolve, reject){
-        var requestProl = indexedDB.open('prolDB');
-        requestProl.onsuccess = function(event){
+        var requestProle = indexedDB.open('proleDB');
+        requestProle.onsuccess = function(event){
           var tx = event.target.result.transaction("caches", "readwrite").objectStore("caches").getAll();
           tx.onsuccess = function(event) { resolve(event.target.result); };
         };
@@ -141,7 +144,7 @@ vorpal
       }
       //Remove swDeps and sw.js or swCache.js
       shell.rm('-rf', targetDir + '/swDeps');
-      shell.rm(targetDir + '/sw.js', targetDir + '/cacheSw.js', targetDir + '/prol.json');
+      shell.rm(targetDir + '/sw.js', targetDir + '/cacheSw.js', targetDir + '/prole.json');
       this.log(chalk.green('Selenium closed and service workers removed'));
       vorpal.show();
       callback();
@@ -166,7 +169,7 @@ vorpal
     var respMessage = "Serving cache from " + args.cacheFile;
     var fileArr = [
       copyDir('/workers/cacheSw.js', '/cacheSw.js'),
-      copyDir('/' + args.cacheFile + '.json' , '/prol.json', nonlocal),
+      copyDir('/' + args.cacheFile + '.json' , '/prole.json', nonlocal),
       copyDir('/swDeps', '/swDeps')
     ];
 
@@ -175,6 +178,6 @@ vorpal
   });
 
 vorpal
-  .delimiter('prol⚒')
+  .delimiter('prole ⚒')
   .show()
   .parse(process.argv);
