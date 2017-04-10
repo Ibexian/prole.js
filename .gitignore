@@ -1,3 +1,5 @@
+.DS_Store
+
 # Logs
 logs
 *.log
@@ -55,3 +57,8 @@ typings/
 
 # dotenv environment variables file
 .env
+
+#Ignore any produced json files
+/*.json
+!/bower.json
+!/package.json

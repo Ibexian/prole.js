@@ -13,14 +13,6 @@ const defaultRegex = '(dmp|api)';
 
 ncp.limit = 16;
 
-/*
-TODO
-  Make sure POST calls also cache
-  Save POST request content as well (perhaps seperate json)
-  Eventually compare post requests for testing
-  Create strict mode (don't pass through)
-*/
-
 var copyDir = function(source, destination, nonlocal) {
   return new Promise(function(resolve, reject){
     var src = nonlocal ? source : __dirname + source;
@@ -47,10 +39,12 @@ var writeToFile = function(fileName, content, cb){
   });
 };
 
-var createRegFile = function(reg) {
-  //Move regext to file then bind to service workers
+var createOptionsFile = function(reg, strict) {
+  //Move regex and other options to file then bind to service workers
   var fileName = 'swDeps/reg.js';
-  var content = `(function (global) {'use strict'; var reg = function(){}; reg.reg = /${reg}/; global.reg = reg;})(this);`;
+  var content = `(function (global) {'use strict';
+    var proleOpts = function(){}; proleOpts.reg = /${reg}/; proleOpts.strict = ${Boolean(strict)};
+    global.proleOpts = proleOpts;})(this);`;
   writeToFile(fileName,content);
 };
 
@@ -99,7 +93,7 @@ vorpal
     self.log("Binding to " + targetDir);
     vorpal.hide();
     //Create regex file
-    createRegFile(regex);
+    createOptionsFile(regex);
     //Move files and folders to target directory (config, ask, or default)
     var fileArr = [copyDir('/workers/sw.js','/sw.js'), copyDir('/swDeps', '/swDeps')];
     moveFilesAndOpenBrowser(fileArr, targetURL, "Server recording", callback, 'sw.js');
@@ -124,7 +118,7 @@ vorpal
       browser.sleep(1000);
       browser.executeScript('return dbContents').then(function(content){ //get the returned value
         var contentObj = {};
-        content.map(call => contentObj[call.url] = call);
+        content.map(call => contentObj[call.method + ":" + call.url] = call);
         writeToFile(out, JSON.stringify(contentObj), callback); //save db contents to file
       });
     });
@@ -153,18 +147,19 @@ vorpal
 vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results from json')
   .option('-a, --address <url>', 'Use a non-default url')
-  .option('-n, --nonlocal', 'cacheFile address is not local')
+  .option('-n, --nonlocal', 'cacheFile is not located in the prole.js directory')
   .option('-r, --regex <regexString>', 'Use non-default regex to determine which requests get recorded')
+  .option('-s, --strict', 'Disables fallback to server for requests not in cache file')
   .types({
     string: ['a', 'address']
   })
   .action(function(args, callback){
     var self = this;
-    var {nonlocal, address = defaultUrl, regex = defaultRegex} = args.options;
+    var {nonlocal, address = defaultUrl, regex = defaultRegex, strict} = args.options;
     self.log("Binding to " + targetDir);
     vorpal.hide();
     //Create regex file
-    createRegFile(regex);
+    createOptionsFile(regex, strict);
     //Move files and folders to target directory (config, ask, or default)
     var respMessage = "Serving cache from " + args.cacheFile;
     var fileArr = [

@@ -35,6 +35,10 @@ The `serve` command also allows the user to stipulate direct links to cache file
 
   e.g. `serve /Users/{SomeUser}/demo`
 
+#### --strict
+Passing the `--strict` or `-s` option to `serve` modifies how prole serves from cache. By default any non-cached request is passed through. With strict mode any non-cached request will fail.
+Strict mode also verifies that any data attached to a POST request matches the "requestContent" in the cache file.
+
 ### Running Prole Commands Directly
 Any of the above prole commands can be run from outside the prole interface by appending them to the `node prole.js` call. This allows for `serve` to be part of an automated testing suite.
 
