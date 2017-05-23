@@ -4,6 +4,7 @@ const {Builder} = require('selenium-webdriver');
 const ncp = require('ncp').ncp;
 const shell = require('shelljs');
 const chalk = require('chalk');
+const jsdiff = require('diff');
 var browser;
 
 //Current Defaults
@@ -67,7 +68,6 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
         vorpal.log(chalk.green(message));
         browser.executeScript('navigator.serviceWorker.register("'+ sw +'")').then(function(){
           browser.sleep(1000);
-          //browser.executeScript('location.reload()');
         });
         vorpal.show();
         callback();
@@ -101,6 +101,7 @@ vorpal
 
 vorpal
   .command('write <outputName>', 'Stops any ongoing caching and saves the results')
+  .option('-l, --log', 'Saves any strict mode serving errors to log')
   .action(function(args, callback) {
     var out = args.outputName + ".json";
     //JS to pass to the open browser through Selenium
@@ -118,7 +119,21 @@ vorpal
       browser.sleep(1000);
       browser.executeScript('return dbContents').then(function(content){ //get the returned value
         var contentObj = {};
-        content.map(call => contentObj[call.method + ":" + call.url] = call);
+        if (args.options.log && content.length && content[0].expected) { //Only save the serve log if errors exist
+          content.map(function(call) {
+            var diff = jsdiff.diffChars(call.expected, call.actual);
+            var diffString = '';
+            diff.map(function(part){
+              var partColor = part.added ? chalk.green :
+                part.removed ? chalk.red : chalk.gray;
+              diffString += partColor(part.value);
+            });
+            vorpal.log(diffString);
+          });
+          contentObj = content;
+        } else {
+          content.map(call => contentObj[call.method + ":" + call.url] = call);
+        }
         writeToFile(out, JSON.stringify(contentObj), callback); //save db contents to file
       });
     });
@@ -148,7 +163,7 @@ vorpal
   .command('serve <cacheFile>', 'Installs service workers and serves previously cached results from json')
   .option('-a, --address <url>', 'Use a non-default url')
   .option('-n, --nonlocal', 'cacheFile is not located in the prole.js directory')
-  .option('-r, --regex <regexString>', 'Use non-default regex to determine which requests get recorded')
+  .option('-r, --regex <regexString>', 'Use non-default regex to determine which requests get intercepted')
   .option('-s, --strict', 'Disables fallback to server for requests not in cache file')
   .types({
     string: ['a', 'address']

@@ -11,6 +11,30 @@
   //Pre-cached File
   var cachedJson;
 
+  // Open DB
+  var openDb = function() {
+    return new Promise(function(resolve, reject){
+      var requestProle = indexedDB.open('proleDB', 13);
+      var db;
+
+      requestProle.onerror = function(event){
+        reject(event);
+      };
+      requestProle.onupgradeneeded = function(event){
+        db = event.target.result;
+        // Create an objectStore for this database
+        var objectStore = db.createObjectStore("caches");
+
+        objectStore.transaction.oncomplete = function(event) {
+          console.log("Database Opened");
+          resolve(db);
+        };
+      };
+    });
+  };
+  var proleDB = openDb();
+  var callIndex = 0;
+
   //Compare request with cached
   var postHandler = function(req) {
     if (proleOpts.strict) {
@@ -27,8 +51,20 @@
     var modUrl = req.url.replace(/(currentTime|now_time)=\d*&?/g, ''); // remove anti-caching url modifiers
     var checkPostRequestData = function(cachedReqText) { //checks request post data against cached request data
       if (proleOpts.strict && type === 'POST') {
+        var requestMatch = cachedReqText === reqText;
         console.log(cachedReqText, reqText);
-        return cachedReqText === reqText;
+        if (!requestMatch) {
+          var reqData = {'expected': cachedReqText, 'actual': reqText};
+          proleDB.then(function(db) { //Store incorrect requests
+            var tx = db.transaction("caches", "readwrite").objectStore("caches");
+            var put = tx.put(reqData, callIndex);
+            callIndex++;
+            put.onerror = function(event) {
+              console.log(event);
+            };
+          });
+        }
+        return requestMatch;
       }
       return true;
     };

@@ -40,7 +40,7 @@
 
   var apiHandler = function(req, reqText) {
     var modUrl = req.url.replace(/(currentTime|now_time)=\d*&?/g, '');
-    console.log(modUrl)
+    console.log('Cached: ', modUrl);
     var altResp;
     return fetch(req).then(function(response) {
       var contentType = response.headers.get('Content-Type');
