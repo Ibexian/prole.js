@@ -134,7 +134,7 @@ vorpal
         } else {
           content.map(call => contentObj[call.method + ":" + call.url] = call);
         }
-        writeToFile(out, JSON.stringify(contentObj), callback); //save db contents to file
+        writeToFile(out, JSON.stringify(contentObj, null, 4), callback); //save db contents to file
       });
     });
     return vorpal.exec('clean');
