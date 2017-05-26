@@ -13,7 +13,7 @@ Prole.js is an automated server cacher and stub using Service Workers
 Installs service worker and records API server responses while you use the site
 
 #### write <outputName>
-Stops any ongoing caching and saves the results to `<outputName>.json`
+Stops any ongoing caching and saves the results to `<outputName>.json`. After serving with the `--strict` tag from json, the write command can also accept a `--log` option to save a log of all POST requests that did not match those in the cached json file.
 
 #### clean
 Stops any ongoing caching without writing to file
