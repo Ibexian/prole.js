@@ -19,7 +19,7 @@ vorpal
   .command('write <outputName>', 'Stops any ongoing caching and saves the results')
   .option('-l, --log', 'Saves any strict mode serving errors to log')
   .action(function(args, callback) {
-    prole.write({'outputName': args.outputName, 'callback': callback, 'options': args.options});
+    prole.write({'outputName': args.outputName, 'callback': callback, 'vorpal': vorpal, 'options': args.options});
   });
 
 vorpal

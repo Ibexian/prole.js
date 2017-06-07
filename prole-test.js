@@ -7,7 +7,7 @@ const shell = require('shelljs');
 const chalk = require('chalk');
 const jsdiff = require('diff');
 var browser;
-var defaultCB = function(){return browser;};
+var defaultCB = function(){console.log('default');};
 var prole = {};
 
 ncp.limit = 16;
@@ -23,7 +23,10 @@ var copyDir = function(source, destination, nonlocal) {
     fs.stat(src, function(err, stat) {
       if (!err) {
         ncp(src, prole.targetDir + destination, function (err) {
-         if (err) { reject(err); }
+        //  if (err && err[0].code !== 'EEXIST') {
+        //    //we're ok with the file already existing (this helps with running tests in parallel)
+        //    reject(err);
+        //  }
          resolve();
         });
       } else {
@@ -51,7 +54,7 @@ var createOptionsFile = function(reg, strict) {
   writeToFile(fileName,content);
 };
 
-var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, sw, vorpal) {
+var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, sw, vorpal, instanceBrowser) {
   var logger = vorpal ? vorpal : console;
   Promise.all(promiseArr).then(() => {
     logger.log(chalk.blue("Files Moved"));
@@ -61,18 +64,23 @@ var moveFilesAndOpenBrowser = function(promiseArr, address, message, callback, s
     }
     //open window
     require('chromedriver');
-    browser = new Builder()
+    var tempBrowser = new Builder()
       .usingServer()
       .withCapabilities({'browserName': 'chrome' })
       .build();
-    browser.get(address)
+    tempBrowser.get(address)
       .then(() => {
         logger.log(chalk.green(message));
-        browser.executeScript('navigator.serviceWorker.register("'+ sw +'")').then(function(){
-          browser.sleep(1000);
+        tempBrowser.executeScript('navigator.serviceWorker.register("'+ sw +'")').then(function(){
+          tempBrowser.sleep(1000);
         });
-        if(vorpal){vorpal.show();}
-        callback();
+        if (vorpal){vorpal.show();}
+        if (!instanceBrowser) {
+          browser = tempBrowser;
+          callback();
+        } else {
+          callback(tempBrowser);
+        }
       });
   }, reason => { //if the promises fail don't try to open the browser
     logger.log(chalk.red(reason));
@@ -133,8 +141,7 @@ prole.write = function(args){
       }
       writeToFile(out, JSON.stringify(contentObj, null, 4), callback); //save db contents to file
     });
-  });
-  prole.clean(args);
+  }).then(function(){prole.clean(args);});
 };
 
 prole.clean = function(args){
@@ -171,7 +178,16 @@ prole.serve = function(args){
     copyDir('/swDeps', '/swDeps')
   ];
 
-  moveFilesAndOpenBrowser(fileArr, address, respMessage, callback, 'cacheSw.js', args.vorpal);
+  moveFilesAndOpenBrowser(fileArr, address, respMessage, callback, 'cacheSw.js', args.vorpal, args.instanceBrowser);
+};
+
+prole.driver = function(args) {
+  //Returns a new selenium instance serving from a cache
+  return new Promise(function(resolve, reject){
+    args.instanceBrowser = true;
+    args.callback = function(x){resolve(x);};
+    prole.serve(args);
+  });
 };
 
 module.exports = prole;
