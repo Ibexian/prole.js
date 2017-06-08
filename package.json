@@ -13,6 +13,6 @@
     "vorpal": "^1.11.4"
   },
   "scripts": {
-    "test": "ava"
+    "test": "ava --verbose"
   }
 }

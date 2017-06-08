@@ -12,30 +12,44 @@ test.beforeEach(async t => {
     });
 });
 
-test('Search for avajs', async t => {
+test('Check for user log-in', async t => {
       let driver = t.context.driver;
-      await searchGoogle(driver, 'avajs')
-      t.is(await driver.getTitle(), "avajs - Google Search");
+      await prepareCompass(driver);
+      t.is(await driver.findElement(webdriver.By.xpath('//*[@id="lo-1"]/div/ul/li[1]')).getText(), "aperture_user");
       await driver.quit();
 });
 
-test('Search for avajs', async t => {
+test('Segment List populates', async t => {
       let driver = t.context.driver;
-      await searchGoogle(driver, 'avajs')
-      t.is(await driver.getTitle(), "avajs - Google Search");
+      await prepareCompass(driver);
+      await driver.get('http://localhost:9000/#audiences/segments');
+      await driver.wait(webdriver.until.elementLocated(webdriver.By.className('strand-grid-item')), 10000);
+      t.truthy(await driver.executeScript("return document.getElementById('list-of-segments').data.length;"));
       await driver.quit();
 });
 
-test('Search for concurrent', async t => {
+test('Segment Saves in Strict Mode', async t => {
       let driver = t.context.driver;
-      await searchGoogle(driver, 'concurrent')
-      t.is(await driver.getTitle(), "concurrent - Google Search");
+      await prepareCompass(driver)
+      await driver.get('http://localhost:9000/#audiences/segments/adaptive/create');
+      await driver.sleep('2000');
+      await driver.wait(webdriver.until.elementLocated(webdriver.By.id('advertisers')), 10000);
+      await driver.findElement(webdriver.By.css('#segment-name-wc input')).sendKeys('test segment'); //Fill in name
+      await driver.executeScript("return document.getElementById('advertisers').open()"); //open advertisers
+      await driver.executeScript("return document.querySelector('#middle > div:nth-child(1)').click()"); //open advertisers
+      await driver.findElement(webdriver.By.id('add-behavior-button')).click(); //Click add behavior
+      await driver.findElement(webdriver.By.css('tr:nth-child(5) > td:nth-child(2) > span')).click(); //Expand Event pixels
+      await driver.findElement(webdriver.By.css('tr:nth-child(6) > td:nth-child(2) > span')).click(); //Select first pixel
+      await driver.findElement(webdriver.By.id('add-button')).click(); //Click Apply
+      await driver.findElement(webdriver.By.id('save-segment-button')).click(); //Click Save
+      await driver.sleep('500'); //Allow for page redirect
+      let footerText = await driver.wait(webdriver.until.elementLocated(webdriver.By.id('messageBox')));
+      t.is(await footerText.getText(), "Save Successful");
       await driver.quit();
 });
 
-async function searchGoogle(driver, keyword) {
-      await driver.get('http://www.google.com/ncr');
-      await driver.findElement(webdriver.By.name('q')).sendKeys(keyword);
-      await driver.findElement(webdriver.By.name('btnG')).click();
-      await driver.wait(webdriver.until.titleIs(keyword + ' - Google Search'), 1000);
+async function prepareCompass(driver) {
+      await driver.navigate().refresh();
+      await driver.navigate().refresh();
+      await driver.wait(webdriver.until.elementLocated(webdriver.By.xpath('//*[@id="lo-1"]/div/ul/li[1]')), 5000);
 }
